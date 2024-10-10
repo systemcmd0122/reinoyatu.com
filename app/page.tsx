@@ -46,13 +46,15 @@ const INITIAL_STATE: GameState = {
   lastLogin: Date.now(),
 };
 
+const BOSS_INITIAL_HEALTH = 1000;
+
 const Home = () => {
   const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
   const [showAchievement, setShowAchievement] = useState('');
   const [showQuest, setShowQuest] = useState(false);
   const [showShop, setShowShop] = useState(false);
   const [showBoss, setShowBoss] = useState(false);
-  const [bossHealth, setBossHealth] = useState(1000);
+  const [bossHealth, setBossHealth] = useState(BOSS_INITIAL_HEALTH);
 
   useEffect(() => {
     const savedState = localStorage.getItem('gameState');
@@ -253,20 +255,28 @@ const Home = () => {
   };
 
   const attackBoss = () => {
-    const damage = Math.max(0, gameState.strength - 20);
-    setBossHealth(prev => Math.max(0, prev - damage));
+    const playerDamage = Math.max(1, gameState.strength - 10);
+    const bossDamage = Math.max(1, 30 - gameState.defense);
+
+    setBossHealth(prev => Math.max(0, prev - playerDamage));
+    
     setGameState(prev => ({
       ...prev,
-      health: Math.max(0, prev.health - 10),
+      health: Math.max(0, prev.health - bossDamage),
       mana: Math.max(0, prev.mana - 5)
     }));
 
-    if (bossHealth - damage <= 0) {
+    if (bossHealth - playerDamage <= 0) {
       unlockAchievement('ボス撃破！');
       completeQuest('最初のボスを倒す');
       setShowBoss(false);
       addExp(500);
       addCoins(1000);
+      alert('ボスを倒しました！報酬として500EXPと1000コインを獲得しました！');
+    } else if (gameState.health - bossDamage <= 0) {
+      alert('ボス戦に敗北しました。回復して再挑戦しましょう！');
+      setShowBoss(false);
+      heal(gameState.maxHealth); // 全回復させる
     }
   };
 
@@ -350,12 +360,20 @@ const Home = () => {
             </p>
             <button
               className="minecraft-button text-2xl"
-              onClick={() => setShowBoss(true)}
+              onClick={() => {
+                if (gameState.health < gameState.maxHealth / 2) {
+                  alert('体力が少なすぎます！回復してから挑戦しましょう。');
+                } else {
+                  setShowBoss(true);
+                  setBossHealth(BOSS_INITIAL_HEALTH);
+                }
+              }}
             >
               <GiDragonSpiral className="inline-block mr-2" />
               ボスに挑戦
             </button>
           </motion.section>
+
           {/* 特徴セクション */}
           <motion.section 
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16"
@@ -560,13 +578,15 @@ const Home = () => {
                 <div className="boss-health-bar w-full h-8 bg-red-900 mb-4">
                   <div
                     className="h-full bg-red-500"
-                    style={{ width: `${(bossHealth / 1000) * 100}%` }}
+                    style={{ width: `${(bossHealth / BOSS_INITIAL_HEALTH) * 100}%` }}
                   ></div>
                 </div>
-                <p className="mb-4">ボスのHP: {bossHealth}/1000</p>
+                <p className="mb-4">ボスのHP: {bossHealth}/{BOSS_INITIAL_HEALTH}</p>
+                <p className="mb-4">あなたのHP: {gameState.health}/{gameState.maxHealth}</p>
                 <button
                   className="minecraft-button text-2xl mb-4"
                   onClick={attackBoss}
+                  disabled={gameState.health <= 0}
                 >
                   <GiSwordman className="inline-block mr-2" />
                   攻撃
