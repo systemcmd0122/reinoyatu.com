@@ -341,6 +341,12 @@ const Home = () => {
             <Link href="/contact" className="minecraft-button">
               <span>Contact</span>
             </Link>
+            <Link href="/subscribers" className="minecraft-button">
+            <span>YouTube Stats</span>
+          </Link>
+          <Link href="/subscribers" className="minecraft-button">
+              <span>YouTube Stats</span>
+            </Link>
           </div>
         </nav>
 
